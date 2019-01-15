@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Compile.Iconv do
-  @shortdoc "Compiles Iconv"
+  @moduledoc "Compiles Iconv"
   @doc """
   For Linux:
   1. Install gcc and libconv via your distro's package manager.
@@ -15,16 +15,25 @@ defmodule Mix.Tasks.Compile.Iconv do
   4. Once the dll is compiled in your priv folder, MSYS2 is no longer required as the dll compiled is native and redistributable.
   """
   def run(_) do
-    lib_ext = if {:win32, :nt} == :os.type, do: "dll", else: "so"
+    lib_ext = if {:win32, :nt} == :os.type(), do: "dll", else: "so"
     lib_file = "priv/Elixir.Iconv_nif.#{lib_ext}"
+
     if not File.exists?(lib_file) do
-      [i_erts]=Path.wildcard("#{:code.root_dir}/erts*/include")
-      i_ei=:code.lib_dir(:erl_interface,:include)
-      l_ei=:code.lib_dir(:erl_interface,:lib)
-      args = "-L\"#{l_ei}\" -lerl_interface -lei -I\"#{i_ei}\" -I\"#{i_erts}\" -Wall -shared -fPIC"
-      args = args <> if {:unix, :darwin}==:os.type, do: " -undefined dynamic_lookup -dynamiclib", else: ""
-      args = args <> if {:win32, :nt}==:os.type, do: " -liconv", else: ""
-      Mix.shell.info to_string :os.cmd('gcc #{args} -v -o #{lib_file} c_src/iconv_nif.c')
+      [i_erts] = Path.wildcard("#{:code.root_dir()}/erts*/include")
+      i_ei = :code.lib_dir(:erl_interface, :include)
+      l_ei = :code.lib_dir(:erl_interface, :lib)
+
+      args =
+        "-L\"#{l_ei}\" -lerl_interface -lei -I\"#{i_ei}\" -I\"#{i_erts}\" -Wall -shared -fPIC"
+
+      args =
+        args <>
+          if {:unix, :darwin} == :os.type(),
+            do: " -undefined dynamic_lookup -dynamiclib",
+            else: ""
+
+      args = args <> if {:win32, :nt} == :os.type(), do: " -liconv", else: ""
+      Mix.shell().info(to_string(:os.cmd('gcc #{args} -v -o #{lib_file} c_src/iconv_nif.c')))
     end
   end
 end
@@ -33,13 +42,15 @@ defmodule Mailibex.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :mailibex,
-     version: "0.1.4",
-     elixir: "> 1.3.0",
-     description: description(),
-     package: package(),
-     compilers: [:iconv, :elixir, :app],
-     deps: deps()]
+    [
+      app: :mailibex,
+      version: "0.1.4",
+      elixir: "> 1.3.0",
+      description: description(),
+      package: package(),
+      compilers: [:iconv, :elixir, :app],
+      deps: deps()
+    ]
   end
 
   def application do
@@ -47,9 +58,11 @@ defmodule Mailibex.Mixfile do
   end
 
   defp package do
-    [ maintainers: ["Arnaud Wetzel","heri16"],
+    [
+      maintainers: ["Arnaud Wetzel", "heri16"],
       licenses: ["The MIT License (MIT)"],
-      links: %{ "GitHub"=>"https://github.com/awetzel/mailibex" } ]
+      links: %{"GitHub" => "https://github.com/awetzel/mailibex"}
+    ]
   end
 
   defp description do
@@ -60,7 +73,7 @@ defmodule Mailibex.Mixfile do
     mimemail as a keyword list.
     """
   end
-  
+
   defp deps do
     [
       {:codepagex, "~> 0.1", optional: true},
