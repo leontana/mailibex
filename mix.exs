@@ -34,6 +34,8 @@ defmodule Mix.Tasks.Compile.Iconv do
 
       args = args <> if {:win32, :nt} == :os.type(), do: " -liconv", else: ""
       Mix.shell().info(to_string(:os.cmd('gcc #{args} -v -o #{lib_file} c_src/iconv_nif.c')))
+    else
+      :ok
     end
   end
 end

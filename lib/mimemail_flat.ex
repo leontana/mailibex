@@ -26,16 +26,6 @@ defmodule MimeMail.Flat do
     mail
     |> MimeMail.decode_body()
     |> find_bodies
-    |> Enum.concat(mail.headers)
-    |> Enum.filter(fn {k, _} ->
-      not (k in [
-             :inline,
-             :"content-type",
-             :"content-disposition",
-             :"content-transfer-encoding",
-             :"content-id"
-           ])
-    end)
   end
 
   def update_mail(%MimeMail{} = mail, updatefn) do

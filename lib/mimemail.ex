@@ -25,7 +25,7 @@ defmodule MimeMail do
 
     headers =
       headers
-      |> String.replace(~r/\r\n([^\t ])/, "\r\n!\\1")
+      |> String.replace(~r/\r\n(?!boundary|\t| )/, "\r\n!\\1")
       |> String.split("\r\n!")
       |> Enum.map(&{String.split(&1, ~r/\s*:/, parts: 2), &1})
 
@@ -54,23 +54,33 @@ defmodule MimeMail do
     %{headers: headers} = mail = MimeMail.CTParams.decode_headers(mail)
 
     body =
-      case headers[:"content-transfer-encoding"] do
-        {"quoted-printable", _} -> body |> qp_to_binary
-        {"base64", _} -> body |> String.replace(~r/\s/, "") |> Base.decode64() |> ok_or("")
-        _ -> body
-      end
-
-    body =
-      case headers[:"content-type"] do
-        {"multipart/" <> _, %{boundary: bound}} ->
+      case [headers[:"content-type"], headers[:"content-transfer-encoding"]] do
+        [{"multipart/" <> _, %{boundary: bound}}, _] ->
           body
           |> String.split(~r"\s*--#{bound}\s*")
           |> Enum.slice(1..-2)
           |> Enum.map(&from_string/1)
           |> Enum.map(&decode_body/1)
 
-        {"text/" <> _, %{charset: charset}} ->
+        [{"text/" <> _, %{charset: charset}}, {"quoted-printable", _}] ->
+          Regex.replace(~r/((=[\dA-Z]{2})+)/, String.split(body, ~r"=(\r)?\n") |> Enum.join, fn match ->
+            qp_to_binary(match) |> Iconv.conv(charset, "utf8") |> ok_or("")
+          end)
+          |> ensure_utf8
+
+        [{"text/" <> _, %{charset: charset}}, {"base64", _}] ->
+          decoded_body = body |> String.replace(~r/\s/, "") |> Base.decode64() |> ok_or("")
+
+          decoded_body
+          |> Iconv.conv(charset, "utf8")
+          |> ok_or(ensure_ascii(decoded_body))
+          |> ensure_utf8
+
+        [{"text/" <> _, %{charset: charset}}, _] ->
           body |> Iconv.conv(charset, "utf8") |> ok_or(ensure_ascii(body)) |> ensure_utf8
+
+        [_, {"base64", _}] ->
+          body |> String.replace(~r/\s/, "") |> Base.decode64() |> ok_or("")
 
         _ ->
           body
@@ -155,8 +165,11 @@ defmodule MimeMail do
     |> Enum.join("\r\n")
   end
 
-  defp char_to_qp(char),
-    do: for(<<a, b <- Base.encode16(<<char::utf8>>)>>, into: "", do: <<?=, a, b>>)
+  defp char_to_qp(char), do:
+    for(<<a, b <- Base.encode16(<<char::utf8>>)>>, into: "", do: <<?=, a, b>>)
+
+  defp chunk_line(<<vline::size(76)-binary, "\r\n", rest::binary>>),
+    do: vline <> "\r\n" <> chunk_line(rest)
 
   defp chunk_line(<<vline::size(73)-binary, ?=, rest::binary>>),
     do: vline <> "=\r\n" <> chunk_line("=" <> rest)

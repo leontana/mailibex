@@ -10,7 +10,6 @@ defmodule DMARC do
 
   case :httpc.request(:get, {'#{url}', []}, [], body_format: :binary) do
     {:ok, {{_, 200, _}, _, r}} ->
-      Logger.debug("Download suffix from #{url}")
       r
 
     e ->

@@ -85,9 +85,10 @@ defmodule MimeMailTest do
     |> MimeMail.from_string
     |> MimeMail.decode_headers([DKIM,MimeMail.Emails,MimeMail.Words,MimeMail.CTParams])
     |> MimeMail.decode_body
+
     roundtrip = decoded 
-    |> MimeMail.to_string 
-    |> MimeMail.from_string 
+    |> MimeMail.to_string
+    |> MimeMail.from_string
     |> MimeMail.decode_body
     assert String.trim_trailing(decoded.body) == String.trim_trailing(roundtrip.body)
   end
