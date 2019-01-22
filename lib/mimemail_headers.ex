@@ -165,8 +165,10 @@ defmodule MimeMail.Words do
 
   def word_decode(str) do
     str
-    |> String.split(~r/\s+/)
-    |> Enum.map(&single_word_decode/1)
+    |> String.split(~r"(?<==)(\r)?\n\s+")
+    |> Enum.map(fn line ->
+      Regex.replace(~r/([^\s\t]+)/, line, &single_word_decode/1)
+    end)
     |> Enum.join()
     |> String.trim_trailing()
   end
@@ -182,11 +184,11 @@ defmodule MimeMail.Words do
         MimeMail.ok_or(Iconv.conv(str, enc, "utf8"), MimeMail.ensure_ascii(str))
 
       _ ->
-        "#{str} "
+        "#{str}"
     end
   end
 
-  def single_word_decode(str), do: "#{str} "
+  def single_word_decode(str), do: "#{str}"
 
   def q_to_binary("_" <> rest, acc), do: q_to_binary(rest, [?\s | acc])
 
