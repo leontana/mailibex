@@ -14,7 +14,7 @@ defmodule MimeTypes do
     # construct dict and reverse dict ext->mime
     |> Enum.reduce({[], []}, fn line, {ext2mime, mime2ext} ->
       [mime | exts] = line |> String.trim() |> String.split(~r/\s+/)
-      {Enum.into(for(ext <- exts, do: {ext, mime}), ext2mime), [{mime, hd(exts)} | mime2ext]}
+      {for(ext <- exts, do: {ext, mime}) ++ ext2mime, [{mime, hd(exts)} | mime2ext]}
     end)
 
   def ext2mime(""), do: "text/plain"

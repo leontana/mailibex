@@ -240,7 +240,7 @@ defmodule SPF do
     false = lookup_limit_exceeded()
 
     case :inet_res.gethostbyname('#{target_name(domain_spec, params)}', :inet) do
-      {:ok, {:hostent, _, _, _, _, ip_list}} when length(ip_list) > 0 -> :match
+      {:ok, {:hostent, _, _, _, _, ip_list}} when ip_list != [] -> :match
       _ -> :notmatch
     end
   end

@@ -63,9 +63,13 @@ defmodule MimeMail do
           |> Enum.map(&decode_body/1)
 
         [{"text/" <> _, %{charset: charset}}, {"quoted-printable", _}] ->
-          Regex.replace(~r/((=[\dA-Z]{2})+)/, String.split(body, ~r"=(\r)?\n") |> Enum.join, fn match ->
-            qp_to_binary(match) |> Iconv.conv(charset, "utf8") |> ok_or("")
-          end)
+          Regex.replace(
+            ~r/((=[\dA-Z]{2})+)/,
+            String.split(body, ~r"=(\r)?\n") |> Enum.join(),
+            fn match ->
+              qp_to_binary(match) |> Iconv.conv(charset, "utf8") |> ok_or("")
+            end
+          )
           |> ensure_utf8
 
         [{"text/" <> _, %{charset: charset}}, {"base64", _}] ->
@@ -165,8 +169,8 @@ defmodule MimeMail do
     |> Enum.join("\r\n")
   end
 
-  defp char_to_qp(char), do:
-    for(<<a, b <- Base.encode16(<<char::utf8>>)>>, into: "", do: <<?=, a, b>>)
+  defp char_to_qp(char),
+    do: for(<<a, b <- Base.encode16(<<char::utf8>>)>>, into: "", do: <<?=, a, b>>)
 
   defp chunk_line(<<vline::size(76)-binary, "\r\n", rest::binary>>),
     do: vline <> "\r\n" <> chunk_line(rest)
@@ -199,7 +203,7 @@ defmodule MimeMail do
     do: header |> String.split("\r\n") |> Enum.map(&fold_header(&1, [])) |> Enum.join("\r\n")
 
   def fold_header(<<line::size(65)-binary, rest::binary>>, acc) do
-    case '#{line}' |> Enum.reverse() |> Enum.split_while(&(&1 !== ?\t and &1 !== ?\s)) do
+    case line |> to_charlist |> Enum.reverse() |> Enum.split_while(&(&1 !== ?\t and &1 !== ?\s)) do
       {eol, []} -> fold_header(rest, [eol | acc])
       {eol, bol} -> fold_header("#{Enum.reverse(eol)}" <> rest, ["\r\n          ", bol | acc])
     end
