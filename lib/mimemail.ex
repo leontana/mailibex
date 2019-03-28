@@ -12,7 +12,7 @@ defmodule MimeMail do
   defdelegate get(dict, k, v), to: Map
   defdelegate pop(dict, k), to: Map
 
-  def fix_linebreak(data), do: Regex.replace(~r/(?<!\r)\n/, data, "\r\n")
+  def fix_linebreak(data), do: Regex.replace(~r/(?<!(\r|;))\n/, data, "\r\n")
 
   def from_string(data) do
     data = fix_linebreak(data)
@@ -55,9 +55,9 @@ defmodule MimeMail do
 
     body =
       case [headers[:"content-type"], headers[:"content-transfer-encoding"]] do
-        [{"multipart/" <> _, %{boundary: bound}}, _] ->
+        [{"multipart/" <> _, attributes}, _] ->
           body
-          |> String.split(~r"\s*--#{bound}\s*")
+          |> String.split(~r"\s*--#{attributes[:boundary]}\s*")
           |> Enum.slice(1..-2)
           |> Enum.map(&from_string/1)
           |> Enum.map(&decode_body/1)

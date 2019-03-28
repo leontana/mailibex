@@ -67,7 +67,7 @@ defmodule MimeMail.Flat do
     end)
   end
 
-  def find_bodies({"multipart/alternative", _}, _, _, childs) do
+  def find_bodies({"multipart/" <> type, _}, _, _, childs) when type in ["signed", "alternative"] do
     find_bodies(childs)
   end
 
