@@ -24,12 +24,10 @@ defmodule MimeMail do
       end
 
     headers =
-      headers
-      |> String.replace(~r/\r\n(?!boundary|\t| )/, "\r\n!\\1")
-      |> String.split("\r\n!")
-      |> Enum.map(&{String.split(&1, ~r/\s*:/, parts: 2), &1})
+      Regex.scan(~r/([A-Za-z-]+):\s([^\r\n]+(?:\r?\n(?![A-Za-z-]+:\s)[^\r\n]+)*)/m, headers)
 
-    headers = for {[k, _], v} <- headers, do: {:"#{String.downcase(k)}", {:raw, v}}
+    headers = for [raw, k, _] <- headers, do: {:"#{String.downcase(k)}", {:raw, raw}}
+
     %MimeMail{headers: headers, body: {:raw, body}}
   end
 
@@ -203,7 +201,10 @@ defmodule MimeMail do
     do: header |> String.split("\r\n") |> Enum.map(&fold_header(&1, [])) |> Enum.join("\r\n")
 
   def fold_header(<<line::size(65)-binary, rest::binary>>, acc) do
-    case line |> to_charlist |> Enum.reverse() |> Enum.split_while(&(&1 !== ?\t and &1 !== ?\s)) do
+    case line
+         |> to_charlist
+         |> Enum.reverse()
+         |> Enum.split_while(&(&1 !== ?\t and &1 !== ?\s)) do
       {eol, []} -> fold_header(rest, [eol | acc])
       {eol, bol} -> fold_header("#{Enum.reverse(eol)}" <> rest, ["\r\n          ", bol | acc])
     end
