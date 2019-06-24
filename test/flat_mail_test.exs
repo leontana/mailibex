@@ -21,8 +21,20 @@ defmodule FlatMailTest do
     flat = File.read!("test/mails/invalid_outlook_headers.eml")
     |> MimeMail.from_string
 
-    assert flat[:headers][:"content-type"] == {:raw,
-                                               "Content-Type: text/html; charset=utf-8"}
+    assert flat[:headers][:"content-type"] == {:raw, "Content-Type: text/html; charset=utf-8"}
+    assert flat[:headers][:"message-id"] == {:raw, "Message-ID:\r\n <201906071147.x57BlHUB003339-x57BlHUD003339@mx.cti.ru>"}
+    refute flat[:headers][:subject]
+  end
+
+  test "extract subject headers" do
+    flat = File.read!("test/mails/amazon.eml")
+    |> MimeMail.from_string()
+
+    flat2 = File.read!("test/mails/newlined_subject_header.eml")
+    |> MimeMail.from_string()
+
+    assert flat[:headers][:subject] == {:raw, "Subject: Amazon.fr: votre commande"}
+    assert flat2[:headers][:subject] == {:raw, "Subject:\r\n =?utf-8?Q?=D0=9F=D0=B8=D1=81=D1=8C=D0=BC=D0=BE?="}
   end
 
   test "flat mail mixed(alternative(txt,html))" do
@@ -42,7 +54,7 @@ defmodule FlatMailTest do
     assert ".txt" = MimeTypes.bin2ext(txt)
     assert ".html" = MimeTypes.bin2ext(html)
     assert ".png" = MimeTypes.bin2ext(png)
-    flat = flat 
+    flat = flat
     |> MimeMail.Flat.to_mail
     |> MimeMail.to_string
     |> MimeMail.from_string

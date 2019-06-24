@@ -6,6 +6,9 @@ defmodule MimeMail do
   @type t :: %MimeMail{headers: [{key :: binary, header}], body: body}
   defstruct headers: [], body: ""
 
+  @empty_header_regexp ~r/([0-9A-Za-z-]+):(\r?\n)(?:[0-9A-Za-z-]+):/m
+  @header_regexp ~r/([0-9A-Za-z-]+):\s?\n?([^\r\n]+(?:\r?\n(?![0-9A-Za-z-]+:\s?\n?)[^\r\n]+)*)/m
+
   @behaviour Access
   defdelegate get_and_update(dict, k, v), to: Map
   defdelegate fetch(dict, k), to: Map
@@ -24,11 +27,21 @@ defmodule MimeMail do
       end
 
     headers =
-      Regex.scan(~r/([0-9A-Za-z-]+):\s([^\r\n]+(?:\r?\n(?![0-9A-Za-z-]+:\s)[^\r\n]+)*)/m, headers)
+      Regex.scan(@empty_header_regexp, headers)
+      |> Enum.map(fn [_raw, k, v] -> k <> ":" <> v end)
+      |> remove_empty_headers(headers)
 
-    headers = for [raw, k, _] <- headers, do: {:"#{String.downcase(k)}", {:raw, raw}}
+    headers =
+      Regex.scan(@header_regexp, headers)
+      |> Enum.map(fn [raw, k, _] -> {:"#{String.downcase(k)}", {:raw, raw}} end)
 
     %MimeMail{headers: headers, body: {:raw, body}}
+  end
+
+  defp remove_empty_headers([], headers), do: headers
+
+  defp remove_empty_headers(empty_headers, headers) do
+    String.replace(headers, empty_headers, "")
   end
 
   def to_string(%MimeMail{} = mail) do
