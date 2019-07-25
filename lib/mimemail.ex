@@ -41,7 +41,7 @@ defmodule MimeMail do
   defp remove_empty_headers([], headers), do: headers
 
   defp remove_empty_headers(empty_headers, headers) do
-    String.replace(headers, empty_headers, "")
+    String.replace(headers, empty_headers, "\r\n")
   end
 
   def to_string(%MimeMail{} = mail) do

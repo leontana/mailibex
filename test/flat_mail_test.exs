@@ -26,6 +26,14 @@ defmodule FlatMailTest do
     refute flat[:headers][:subject]
   end
 
+  test "extract to header" do
+    flat = File.read!("test/mails/subject_value_like_header.eml")
+    |> MimeMail.from_string
+
+    assert flat[:headers][:to] == {:raw, "To: To Test <test-to@example.com>"}
+    assert flat[:headers][:subject] == {:raw, "Subject: Re: [Ticket#65] "}
+  end
+
   test "extract subject headers" do
     flat = File.read!("test/mails/amazon.eml")
     |> MimeMail.from_string()
