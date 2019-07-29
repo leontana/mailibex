@@ -6,7 +6,7 @@ defmodule MimeMail do
   @type t :: %MimeMail{headers: [{key :: binary, header}], body: body}
   defstruct headers: [], body: ""
 
-  @empty_header_regexp ~r/([0-9A-Za-z-]+):(\r?\n)(?:[0-9A-Za-z-]+):/m
+  @empty_header_regexp ~r/(^[0-9A-Za-z-]+):(\r?\n)(?:[0-9A-Za-z-]+):/m
   @header_regexp ~r/([0-9A-Za-z-]+):\s?\n?([^\r\n]+(?:\r?\n(?![0-9A-Za-z-]+:\s?\n?)[^\r\n]+)*)/m
 
   @behaviour Access
