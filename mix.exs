@@ -14,29 +14,19 @@ defmodule Mix.Tasks.Compile.Iconv do
   4. Add elxir bin folder and erlang bin folder to your $PATH, then run `mix deps.compile mailibex`.
   4. Once the dll is compiled in your priv folder, MSYS2 is no longer required as the dll compiled is native and redistributable.
   """
-  def run(_) do
-    lib_ext = if {:win32, :nt} == :os.type(), do: "dll", else: "so"
+   def run(_) do
+    lib_ext = if {:win32, :nt} == :os.type, do: "dll", else: "so"
     lib_file = "priv/Elixir.Iconv_nif.#{lib_ext}"
-
     if not File.exists?(lib_file) do
-      [i_erts] = Path.wildcard("#{:code.root_dir()}/erts*/include")
-      i_ei = :code.lib_dir(:erl_interface, :include)
-      l_ei = :code.lib_dir(:erl_interface, :lib)
-
-      args =
-        "-L\"#{l_ei}\" -lerl_interface -lei -I\"#{i_ei}\" -I\"#{i_erts}\" -Wall -shared -fPIC"
-
-      args =
-        args <>
-          if {:unix, :darwin} == :os.type(),
-            do: " -undefined dynamic_lookup -dynamiclib",
-            else: ""
-
-      args = args <> if {:win32, :nt} == :os.type(), do: " -liconv", else: ""
-      Mix.shell().info(to_string(:os.cmd('gcc #{args} -v -o #{lib_file} c_src/iconv_nif.c')))
-    else
-      :ok
+      [i_erts]=Path.wildcard("#{:code.root_dir}/erts*/include")
+      i_ei=:code.lib_dir(:erl_interface,:include)
+      l_ei=:code.lib_dir(:erl_interface,:lib)
+      args = "-L\"#{l_ei}\" -lei -I\"#{i_ei}\" -I\"#{i_erts}\" -Wall -shared -fPIC"
+      args = args <> if {:unix, :darwin}==:os.type, do: " -undefined dynamic_lookup -dynamiclib", else: ""
+      args = args <> if {:win32, :nt}==:os.type, do: " -liconv", else: ""
+      Mix.shell.info to_string :os.cmd('gcc #{args} -v -o #{lib_file} c_src/iconv_nif.c')
     end
+    :ok
   end
 end
 
